@@ -8,6 +8,9 @@
           "extender": "mdi:wifi-arrow-up-down",
           "unreachable": "mdi:wifi-off"
         }
+      },
+      "ap_ssid": {
+        "default": "mdi:router-wireless"
       }
     },
     "switch": {

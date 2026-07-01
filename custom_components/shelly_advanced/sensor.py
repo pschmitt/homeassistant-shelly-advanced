@@ -30,9 +30,14 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the reachability sensor."""
+    """Set up the reachability and AP-SSID sensors."""
     coordinator: ShellyAdvancedCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([ShellyLinkSensor(coordinator, entry)])
+    async_add_entities(
+        [
+            ShellyLinkSensor(coordinator, entry),
+            ApSsidSensor(coordinator, entry),
+        ]
+    )
 
 
 class ShellyLinkSensor(ShellyAdvancedEntity, SensorEntity):
@@ -42,6 +47,8 @@ class ShellyLinkSensor(ShellyAdvancedEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_options = [VIA_DIRECT, VIA_EXTENDER, VIA_UNREACHABLE]
+    _platform = "sensor"
+    _object_id_key = "network_path"
 
     @property
     def unique_id(self) -> str:
@@ -68,3 +75,22 @@ class ShellyLinkSensor(ShellyAdvancedEntity, SensorEntity):
             ATTR_CLIENT_MAC: data.client_mac,
             ATTR_LAST_RECONFIGURE: data.last_reconfigure,
         }
+
+
+class ApSsidSensor(ShellyAdvancedEntity, SensorEntity):
+    """The SSID the Shelly broadcasts on its own access point."""
+
+    _attr_translation_key = "ap_ssid"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _platform = "sensor"
+    _object_id_key = "ap_ssid"
+
+    @property
+    def unique_id(self) -> str:
+        """Return a stable unique id derived from the config entry."""
+        return f"{self._entry.entry_id}_ap_ssid"
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the AP SSID, or None when unknown."""
+        return self.coordinator.data.ap_ssid if self.coordinator.data else None

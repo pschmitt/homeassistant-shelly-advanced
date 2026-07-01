@@ -228,11 +228,24 @@ class ShellyAdvancedCoordinator(DataUpdateCoordinator[ShellyLink]):
         return None
 
     async def _read_config(self, link: ShellyLink) -> None:
-        """Populate eco-mode / AP / range-extender state from the device."""
+        """Populate eco-mode / AP / range-extender state from the device.
+
+        Carry over the previous values first: while the device stays reachable,
+        a single failed config read (busy device, timeout) should not flap the
+        switches to unavailable. They only clear when the device is unreachable
+        (this is not called then).
+        """
+        if (prev := self.data) is not None:
+            link.eco_mode = prev.eco_mode
+            link.ap_enabled = prev.ap_enabled
+            link.extender_enabled = prev.extender_enabled
+            link.ap_ssid = prev.ap_ssid
+
         wifi = await self._rpc.call(link.host, link.port, "WiFi.GetConfig")
         if wifi is not None:
             ap = wifi.get("ap") or {}
             link.ap_enabled = ap.get("enable")
+            link.ap_ssid = ap.get("ssid")
             range_extender = ap.get("range_extender") or {}
             link.extender_enabled = range_extender.get("enable")
         sys = await self._rpc.call(link.host, link.port, "Sys.GetConfig")

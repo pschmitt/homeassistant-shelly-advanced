@@ -71,6 +71,9 @@
           "extender": "Via extender",
           "unreachable": "Unreachable"
         }
+      },
+      "ap_ssid": {
+        "name": "AP SSID"
       }
     },
     "switch": {

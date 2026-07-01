@@ -45,6 +45,8 @@ class FollowEnabledSwitch(ShellyAdvancedEntity, SwitchEntity):
 
     _attr_translation_key = "follow_enabled"
     _attr_entity_category = EntityCategory.CONFIG
+    _platform = "switch"
+    _object_id_key = "auto_reconfigure"
 
     @property
     def unique_id(self) -> str:
@@ -86,6 +88,7 @@ class _DeviceConfigSwitch(ShellyAdvancedEntity, SwitchEntity):
     """
 
     _attr_entity_category = EntityCategory.CONFIG
+    _platform = "switch"
     _key: str
     _method: str
 
@@ -136,6 +139,7 @@ class EcoModeSwitch(_DeviceConfigSwitch):
     """Toggle the device's eco mode (Sys.SetConfig device.eco_mode)."""
 
     _key = "eco_mode"
+    _object_id_key = "eco_mode"
     _method = "Sys.SetConfig"
 
     def _current(self) -> bool | None:
@@ -149,6 +153,7 @@ class ApSwitch(_DeviceConfigSwitch):
     """Toggle the device's access-point (WiFi.SetConfig ap.enable)."""
 
     _key = "ap_enabled"
+    _object_id_key = "access_point"
     _method = "WiFi.SetConfig"
 
     def _current(self) -> bool | None:
@@ -162,6 +167,7 @@ class RangeExtenderSwitch(_DeviceConfigSwitch):
     """Toggle the device's WiFi range extender (ap.range_extender.enable)."""
 
     _key = "range_extender"
+    _object_id_key = "range_extender"
     _method = "WiFi.SetConfig"
 
     def _current(self) -> bool | None:

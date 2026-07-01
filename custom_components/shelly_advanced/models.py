@@ -29,3 +29,5 @@ class ShellyLink:
     eco_mode: bool | None = None
     ap_enabled: bool | None = None
     extender_enabled: bool | None = None
+    # SSID the device broadcasts on its own access point.
+    ap_ssid: str | None = None
