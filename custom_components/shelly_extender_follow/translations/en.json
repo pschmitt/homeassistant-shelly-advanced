@@ -4,10 +4,26 @@
       "user": {
         "title": "Shelly Extender Follow",
         "description": "Keep a roaming Shelly's config entry in sync with wherever it is reachable — directly on the main network, or behind another Shelly acting as a WiFi range extender.",
+        "menu_options": {
+          "manual": "Add a single Shelly",
+          "discover": "Discover and add all Shellys"
+        }
+      },
+      "manual": {
+        "title": "Add a single Shelly",
+        "description": "Pick the roaming Shelly to keep in sync. The extender is optional — leave it blank for a Shelly that never roams (the entry is still healed to its direct address).",
         "data": {
-          "client_entry_id": "Client Shelly (the roaming device to keep in sync)",
+          "client_entry_id": "Client Shelly (the device to keep in sync)",
           "client_direct_host": "Client direct host (mDNS name reachable on the main network, e.g. shelly-xxx.lan)",
-          "extender_host": "Extender host (the Shelly acting as WiFi range extender, e.g. shelly-yyy.lan)"
+          "extender_host": "Extender host (optional — the Shelly acting as WiFi range extender, e.g. shelly-yyy.lan)"
+        }
+      },
+      "discover": {
+        "title": "Discover Shellys",
+        "description": "Select the Shelly devices to follow. Each one's direct host defaults to its current address; the optional extender host below applies to all selected devices. You can fine-tune any of them afterwards.",
+        "data": {
+          "selected_clients": "Shelly devices to add",
+          "extender_host": "Shared extender host (optional)"
         }
       }
     },
@@ -16,7 +32,8 @@
       "cannot_connect_extender": "Could not reach the extender Shelly's WiFi.ListAPClients endpoint."
     },
     "abort": {
-      "already_configured": "This client Shelly is already being followed."
+      "already_configured": "This client Shelly is already being followed.",
+      "no_new_shellys": "All Shelly devices are already being followed."
     }
   },
   "options": {
@@ -33,7 +50,7 @@
   "entity": {
     "sensor": {
       "link": {
-        "name": "Link",
+        "name": "Reachability",
         "state": {
           "direct": "Direct",
           "extender": "Via extender",

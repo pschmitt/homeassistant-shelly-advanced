@@ -5,7 +5,12 @@ from __future__ import annotations
 from homeassistant.const import Platform
 
 DOMAIN = "shelly_extender_follow"
+# The core integration whose config entries we follow.
+SHELLY_DOMAIN = "shelly"
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH]
+
+# Config-flow field for bulk discovery (multi-select of client entries).
+CONF_SELECTED_CLIENTS = "selected_clients"
 
 # Config (entry.data)
 CONF_CLIENT_ENTRY_ID = "client_entry_id"

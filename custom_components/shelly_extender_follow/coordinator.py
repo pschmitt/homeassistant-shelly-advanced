@@ -121,7 +121,10 @@ class ShellyExtenderFollowCoordinator(DataUpdateCoordinator[ShellyLink]):
             )
 
         # 2) Behind the extender: find our MAC in its AP-client table and read
-        #    the forwarded port ("mport") it assigned to us.
+        #    the forwarded port ("mport") it assigned to us. Skipped when no
+        #    extender is configured (a Shelly that never roams is direct-only).
+        if not self._extender_host:
+            return ShellyLink(via=VIA_UNREACHABLE)
         clients = await self._rpc.ap_clients(self._extender_host)
         for candidate in clients or []:
             if _normalize_mac(candidate.get("mac")) != client_mac:
