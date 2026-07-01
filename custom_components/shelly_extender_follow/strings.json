@@ -50,7 +50,7 @@
   "entity": {
     "sensor": {
       "link": {
-        "name": "Reachability",
+        "name": "Network path",
         "state": {
           "direct": "Direct",
           "extender": "Via extender",
