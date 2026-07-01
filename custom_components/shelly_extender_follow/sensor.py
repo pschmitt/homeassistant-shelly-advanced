@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -39,6 +40,7 @@ class ShellyLinkSensor(ShellyExtenderFollowEntity, SensorEntity):
 
     _attr_translation_key = "link"
     _attr_device_class = SensorDeviceClass.ENUM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_options = [VIA_DIRECT, VIA_EXTENDER, VIA_UNREACHABLE]
 
     @property
