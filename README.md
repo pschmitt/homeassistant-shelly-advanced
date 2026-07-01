@@ -22,8 +22,11 @@ Every poll it:
 
 1. Probes the client Shelly directly (`WiFi.GetStatus` on its mDNS name +
    direct port). If it answers, that endpoint wins.
-2. Otherwise queries the extender's `WiFi.ListAPClients`, matches the client's
-   MAC, and reads the forwarded port (`mport`) it was assigned.
+2. Otherwise finds it behind an extender via `WiFi.ListAPClients`, matching the
+   client's MAC and reading the forwarded port (`mport`). If a specific
+   extender host was configured, only that one is queried; otherwise **all
+   other Shellys are scanned** to auto-detect whichever one is currently
+   extending the device (the last match is remembered and tried first).
 3. If the reachable endpoint differs from the client entry's current
    host+port, it updates the entry **and reloads it** (Shelly does not reload
    on a data change by itself). In direct mode it tolerates zeroconf's host
@@ -36,12 +39,20 @@ It exposes one `sensor` per configured device whose state is `direct`,
 
 ## Configuration
 
-Add the integration from the UI and provide:
+Add the integration from the UI. You can either:
 
-- **Client Shelly** — the roaming `shelly` config entry to keep in sync.
-- **Client direct host** — the mDNS name it answers on when on the main
-  network (e.g. `shelly-master-bathroom-ventilation.lan`).
-- **Extender host** — the Shelly acting as the range extender
-  (e.g. `shelly-master-bathroom-towel-heater.lan`).
+- **Add a single Shelly** — pick the `shelly` config entry, its direct host
+  (mDNS name, e.g. `shelly-master-bathroom-ventilation.lan`), and optionally an
+  extender host. Leave the extender blank to auto-detect it.
+- **Discover and add all Shellys** — multi-select every un-followed Shelly at
+  once; each one's direct host defaults to its current address and the extender
+  is auto-detected (or you can pin a shared one).
 
-Options: poll interval (default 30 s) and direct port (default 80).
+The **extender host is optional**: blank means "figure it out" — when the
+device is not directly reachable, every other Shelly's AP-client table is
+scanned to find which one is extending it. A Shelly that never roams simply
+stays healed to its direct address.
+
+Each followed Shelly gets, on its own device page, a **Reachability** sensor
+(`direct` / `extender` / `unreachable`) and an **Auto-follow** switch. Per-entry
+options: poll interval (default 30 s) and direct port (default 80).

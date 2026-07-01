@@ -13,6 +13,7 @@ Each poll:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 
@@ -34,6 +35,7 @@ from .const import (
     DEFAULT_FOLLOW_ENABLED,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    SHELLY_DOMAIN,
     VIA_DIRECT,
     VIA_EXTENDER,
     VIA_UNREACHABLE,
@@ -71,6 +73,9 @@ class ShellyExtenderFollowCoordinator(DataUpdateCoordinator[ShellyLink]):
         self.follow_enabled: bool = entry.options.get(
             CONF_FOLLOW_ENABLED, DEFAULT_FOLLOW_ENABLED
         )
+        # In auto mode (no extender configured), the extender we last found the
+        # client behind — probed first before rescanning all Shellys.
+        self._last_extender_host: str | None = None
 
     @property
     def _client_entry_id(self) -> str:
@@ -120,20 +125,62 @@ class ShellyExtenderFollowCoordinator(DataUpdateCoordinator[ShellyLink]):
                 ip=status.get("sta_ip") or status.get("ip"),
             )
 
-        # 2) Behind the extender: find our MAC in its AP-client table and read
-        #    the forwarded port ("mport") it assigned to us. Skipped when no
-        #    extender is configured (a Shelly that never roams is direct-only).
-        if not self._extender_host:
-            return ShellyLink(via=VIA_UNREACHABLE)
-        clients = await self._rpc.ap_clients(self._extender_host)
-        for candidate in clients or []:
+        # 2) Behind an extender: locate our MAC in an extender's AP-client
+        #    table and read the forwarded port ("mport") it assigned to us.
+        if self._extender_host:
+            # A specific extender was configured — just query that one.
+            return await self._find_on_extender(
+                self._extender_host, client_mac
+            ) or ShellyLink(via=VIA_UNREACHABLE)
+
+        # Auto mode (no extender configured): search every other Shelly's
+        # AP-client table to find whichever one is currently extending us.
+        # Try the last extender we found first (cheap), then scan the rest
+        # concurrently. Non-extender Shellys just return an empty list.
+        if self._last_extender_host:
+            link = await self._find_on_extender(
+                self._last_extender_host, client_mac
+            )
+            if link is not None:
+                return link
+
+        candidates = self._other_shelly_hosts(exclude=self._last_extender_host)
+        results = await asyncio.gather(
+            *(self._find_on_extender(host, client_mac) for host in candidates)
+        )
+        for link in results:
+            if link is not None:
+                return link
+
+        return ShellyLink(via=VIA_UNREACHABLE)
+
+    def _other_shelly_hosts(self, exclude: str | None = None) -> list[str]:
+        """Return the hosts of all other Shelly entries (potential extenders)."""
+        hosts: list[str] = []
+        seen: set[str] = {exclude} if exclude else set()
+        for entry in self.hass.config_entries.async_entries(SHELLY_DOMAIN):
+            if entry.entry_id == self._client_entry_id:
+                continue
+            host = entry.data.get(CONF_HOST)
+            if host and host not in seen:
+                seen.add(host)
+                hosts.append(host)
+        return hosts
+
+    async def _find_on_extender(
+        self, extender_host: str, client_mac: str
+    ) -> ShellyLink | None:
+        """Return an extender ShellyLink if the client is behind this host."""
+        for candidate in await self._rpc.ap_clients(extender_host) or []:
             if _normalize_mac(candidate.get("mac")) != client_mac:
                 continue
             mport = candidate.get("mport") or candidate.get("port")
             if mport:
+                # Remember it so we probe it first next time.
+                self._last_extender_host = extender_host
                 return ShellyLink(
                     via=VIA_EXTENDER,
-                    host=self._extender_host,
+                    host=extender_host,
                     port=int(mport),
                     ip=candidate.get("ip"),
                     mport=int(mport),
@@ -142,12 +189,10 @@ class ShellyExtenderFollowCoordinator(DataUpdateCoordinator[ShellyLink]):
                 "Client %s is connected to extender %s but the AP-client entry "
                 "carries no forwarded port: %s",
                 client_mac,
-                self._extender_host,
+                extender_host,
                 candidate,
             )
-            break
-
-        return ShellyLink(via=VIA_UNREACHABLE)
+        return None
 
     async def _apply(self, client: ConfigEntry, link: ShellyLink) -> None:
         """Repoint the client `shelly` entry to the reachable endpoint.
