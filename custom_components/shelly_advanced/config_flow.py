@@ -142,6 +142,41 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({}),
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict | None = None
+    ) -> ConfigFlowResult:
+        """Edit an existing entry's direct address and extender."""
+        entry = self._get_reconfigure_entry()
+        if user_input is not None:
+            return self.async_update_reload_and_abort(
+                entry,
+                data_updates={
+                    CONF_CLIENT_DIRECT_HOST: user_input[
+                        CONF_CLIENT_DIRECT_HOST
+                    ].strip(),
+                    CONF_EXTENDER_HOST: (
+                        user_input.get(CONF_EXTENDER_HOST) or ""
+                    ).strip(),
+                },
+            )
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_CLIENT_DIRECT_HOST,
+                    default=entry.data.get(CONF_CLIENT_DIRECT_HOST, ""),
+                ): str,
+                vol.Optional(
+                    CONF_EXTENDER_HOST,
+                    default=entry.data.get(CONF_EXTENDER_HOST, ""),
+                ): str,
+            }
+        )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=schema,
+            description_placeholders={"name": entry.title},
+        )
+
     async def async_step_manual(
         self, user_input: dict | None = None
     ) -> ConfigFlowResult:

@@ -28,6 +28,14 @@
       "discovery_confirm": {
         "title": "Shelly Advanced",
         "description": "Add **{name}** to Shelly Advanced? Its address is taken from the Shelly integration, and the extender is auto-detected if it ever roams."
+      },
+      "reconfigure": {
+        "title": "Reconfigure {name}",
+        "description": "Set the direct address for this Shelly — the LAN IP or hostname it answers on when it's connected directly to the main network. This is what's probed to detect a direct connection (the extender is auto-detected when it roams).",
+        "data": {
+          "client_direct_host": "Direct LAN address (IP or hostname, e.g. 10.0.0.42 or shelly-kitchen.lan)",
+          "extender_host": "Extender host (optional — blank = auto-detect)"
+        }
       }
     },
     "flow_title": "{name}",
@@ -37,6 +45,7 @@
     },
     "abort": {
       "already_configured": "This client Shelly is already being followed.",
+      "reconfigure_successful": "Direct address updated.",
       "no_new_shellies": "All Shelly devices are already being followed.",
       "no_mac": "Could not determine the Shelly's MAC address from discovery.",
       "no_shelly_entry": "This Shelly is not set up in the Shelly integration yet, so there is nothing to follow."
