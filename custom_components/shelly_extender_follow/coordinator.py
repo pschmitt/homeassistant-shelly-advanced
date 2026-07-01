@@ -1,0 +1,171 @@
+"""Coordinator for the Shelly Extender Follow integration.
+
+Each poll:
+  1. Probe the client Shelly directly on the main network (its own mDNS name
+     on the direct port). If it answers, that is the truth.
+  2. Otherwise ask the extender Shelly for its AP-client table and look up our
+     client's MAC to discover the forwarded port ("mport") it was assigned.
+  3. If reachable, update the client's `shelly` config entry host+port to match
+     and reload it — but only when it actually needs it, so we don't fight HA's
+     own zeroconf discovery (which happily rewrites the host but never the
+     port, which is the bug this integration exists to fix).
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import timedelta
+
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
+
+from .api import ShellyRpc
+from .const import (
+    CONF_CLIENT_DIRECT_HOST,
+    CONF_CLIENT_ENTRY_ID,
+    CONF_DIRECT_PORT,
+    CONF_EXTENDER_HOST,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_DIRECT_PORT,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    VIA_DIRECT,
+    VIA_EXTENDER,
+    VIA_UNREACHABLE,
+)
+from .models import ShellyLink
+
+_LOGGER = logging.getLogger(__name__)
+
+
+def _normalize_mac(mac: str | None) -> str:
+    """Reduce any MAC representation to lowercase hex with no separators."""
+    return "".join(c for c in (mac or "").lower() if c in "0123456789abcdef")
+
+
+class ShellyExtenderFollowCoordinator(DataUpdateCoordinator[ShellyLink]):
+    """Poll reachability and keep the client Shelly's config entry in sync."""
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Initialize the coordinator from a config entry."""
+        super().__init__(
+            hass,
+            logger=_LOGGER,
+            name=DOMAIN,
+            config_entry=entry,
+            update_interval=timedelta(
+                seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+            ),
+        )
+        self._rpc = ShellyRpc(hass)
+        # Persisted across polls so the sensor can show when we last repointed.
+        self.last_reconfigure: str | None = None
+
+    @property
+    def _client_entry_id(self) -> str:
+        return self.config_entry.data[CONF_CLIENT_ENTRY_ID]
+
+    @property
+    def _direct_host(self) -> str:
+        return self.config_entry.data[CONF_CLIENT_DIRECT_HOST]
+
+    @property
+    def _extender_host(self) -> str:
+        return self.config_entry.data[CONF_EXTENDER_HOST]
+
+    @property
+    def _direct_port(self) -> int:
+        return self.config_entry.options.get(CONF_DIRECT_PORT, DEFAULT_DIRECT_PORT)
+
+    def _client_entry(self) -> ConfigEntry | None:
+        return self.hass.config_entries.async_get_entry(self._client_entry_id)
+
+    async def _async_update_data(self) -> ShellyLink:
+        client = self._client_entry()
+        if client is None:
+            raise UpdateFailed("Client Shelly config entry no longer exists")
+
+        client_mac = _normalize_mac(client.unique_id)
+        link = await self._probe(client_mac)
+        if link.via != VIA_UNREACHABLE:
+            await self._apply(client, link)
+
+        link.client_mac = client_mac
+        link.last_reconfigure = self.last_reconfigure
+        return link
+
+    async def _probe(self, client_mac: str) -> ShellyLink:
+        """Determine how the client Shelly is reachable right now."""
+        # 1) Direct on the main network, via its own stable mDNS name.
+        status = await self._rpc.wifi_status(self._direct_host, self._direct_port)
+        if status is not None:
+            return ShellyLink(
+                via=VIA_DIRECT,
+                host=self._direct_host,
+                port=self._direct_port,
+                ssid=status.get("ssid"),
+                ip=status.get("sta_ip") or status.get("ip"),
+            )
+
+        # 2) Behind the extender: find our MAC in its AP-client table and read
+        #    the forwarded port ("mport") it assigned to us.
+        clients = await self._rpc.ap_clients(self._extender_host)
+        for candidate in clients or []:
+            if _normalize_mac(candidate.get("mac")) != client_mac:
+                continue
+            mport = candidate.get("mport") or candidate.get("port")
+            if mport:
+                return ShellyLink(
+                    via=VIA_EXTENDER,
+                    host=self._extender_host,
+                    port=int(mport),
+                    ip=candidate.get("ip"),
+                    mport=int(mport),
+                )
+            _LOGGER.warning(
+                "Client %s is connected to extender %s but the AP-client entry "
+                "carries no forwarded port: %s",
+                client_mac,
+                self._extender_host,
+                candidate,
+            )
+            break
+
+        return ShellyLink(via=VIA_UNREACHABLE)
+
+    async def _apply(self, client: ConfigEntry, link: ShellyLink) -> None:
+        """Repoint the client `shelly` entry to the reachable endpoint.
+
+        Shelly does not reload on a data change (it only reads host/port at
+        setup), so we must reload the entry ourselves after updating it.
+        """
+        cur_host = client.data.get(CONF_HOST)
+        cur_port = client.data.get(CONF_PORT, DEFAULT_DIRECT_PORT)
+        loaded = client.state is ConfigEntryState.LOADED
+
+        if link.via == VIA_DIRECT:
+            # Tolerate zeroconf host churn: whether the entry holds the mDNS
+            # name or the raw IP, both work on the direct port. Only intervene
+            # when the port is wrong (the classic bug) or the entry is not
+            # loaded — otherwise we would ping-pong against discovery.
+            if loaded and cur_port == link.port:
+                return
+        elif loaded and cur_host == link.host and cur_port == link.port:
+            return
+
+        new_data = {**client.data, CONF_HOST: link.host, CONF_PORT: link.port}
+        if not self.hass.config_entries.async_update_entry(client, data=new_data):
+            return
+
+        _LOGGER.info(
+            "Repointed %s to %s:%s (reachable via %s)",
+            client.title,
+            link.host,
+            link.port,
+            link.via,
+        )
+        self.last_reconfigure = dt_util.utcnow().isoformat()
+        await self.hass.config_entries.async_reload(client.entry_id)

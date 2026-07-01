@@ -1,0 +1,12 @@
+{
+  "domain": "shelly_extender_follow",
+  "name": "Shelly Extender Follow",
+  "codeowners": ["@pschmitt"],
+  "config_flow": true,
+  "documentation": "https://github.com/pschmitt/homeassistant-shelly-extender-follow",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/pschmitt/homeassistant-shelly-extender-follow/issues",
+  "loggers": ["custom_components.shelly_extender_follow"],
+  "version": "0.1.0"
+}
