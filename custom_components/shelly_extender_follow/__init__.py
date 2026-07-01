@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntry
 
 from .const import DOMAIN, PLATFORMS
 from .coordinator import ShellyExtenderFollowCoordinator
@@ -36,3 +37,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_reload_on_update(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload when the entry's options change (e.g. poll interval)."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, entry: ConfigEntry, device: DeviceEntry
+) -> bool:
+    """Allow detaching a device from this entry via the UI.
+
+    Since our entities live on the client Shelly's device, this lets the user
+    remove that association (and cleans up any stale service device left by an
+    earlier version).
+    """
+    return True
