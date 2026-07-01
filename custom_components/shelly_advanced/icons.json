@@ -10,7 +10,7 @@
         }
       },
       "ap_ssid": {
-        "default": "mdi:router-wireless"
+        "default": "mdi:wifi-marker"
       }
     },
     "switch": {
