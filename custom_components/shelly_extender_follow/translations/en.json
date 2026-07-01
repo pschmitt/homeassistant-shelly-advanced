@@ -40,6 +40,11 @@
           "unreachable": "Unreachable"
         }
       }
+    },
+    "switch": {
+      "follow_enabled": {
+        "name": "Auto-follow"
+      }
     }
   }
 }

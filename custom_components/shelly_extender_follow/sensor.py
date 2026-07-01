@@ -23,12 +23,6 @@ from .const import (
 from .coordinator import ShellyExtenderFollowCoordinator
 from .entity import ShellyExtenderFollowEntity
 
-_ICONS = {
-    VIA_DIRECT: "mdi:wifi",
-    VIA_EXTENDER: "mdi:wifi-arrow-up-down",
-    VIA_UNREACHABLE: "mdi:wifi-off",
-}
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -56,12 +50,6 @@ class ShellyLinkSensor(ShellyExtenderFollowEntity, SensorEntity):
     def native_value(self) -> str | None:
         """Return the current reachability classification."""
         return self.coordinator.data.via if self.coordinator.data else None
-
-    @property
-    def icon(self) -> str:
-        """Return an icon reflecting the current reachability."""
-        via = self.coordinator.data.via if self.coordinator.data else VIA_UNREACHABLE
-        return _ICONS.get(via, "mdi:wifi-off")
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:

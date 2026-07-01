@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.const import Platform
 
 DOMAIN = "shelly_extender_follow"
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.SWITCH]
 
 # Config (entry.data)
 CONF_CLIENT_ENTRY_ID = "client_entry_id"
@@ -15,10 +15,15 @@ CONF_EXTENDER_HOST = "extender_host"
 # Options (entry.options)
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_DIRECT_PORT = "direct_port"
+# Whether the integration actively repoints the client entry. Toggled at
+# runtime by the per-entry "Auto-follow" switch; persisted here so the choice
+# survives restarts and is respected on the very first poll after setup.
+CONF_FOLLOW_ENABLED = "follow_enabled"
 
 DEFAULT_SCAN_INTERVAL = 30
 MIN_SCAN_INTERVAL = 10
 DEFAULT_DIRECT_PORT = 80
+DEFAULT_FOLLOW_ENABLED = True
 
 # Reachability classification — also the sensor state (an ENUM).
 VIA_DIRECT = "direct"

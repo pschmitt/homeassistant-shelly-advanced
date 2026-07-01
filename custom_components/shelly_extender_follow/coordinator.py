@@ -28,8 +28,10 @@ from .const import (
     CONF_CLIENT_ENTRY_ID,
     CONF_DIRECT_PORT,
     CONF_EXTENDER_HOST,
+    CONF_FOLLOW_ENABLED,
     CONF_SCAN_INTERVAL,
     DEFAULT_DIRECT_PORT,
+    DEFAULT_FOLLOW_ENABLED,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     VIA_DIRECT,
@@ -63,6 +65,12 @@ class ShellyExtenderFollowCoordinator(DataUpdateCoordinator[ShellyLink]):
         self._rpc = ShellyRpc(hass)
         # Persisted across polls so the sensor can show when we last repointed.
         self.last_reconfigure: str | None = None
+        # Whether auto-follow is active. Read once here (and re-read on reload)
+        # so the very first poll after setup already honors the persisted
+        # choice. Toggled at runtime by the per-entry switch.
+        self.follow_enabled: bool = entry.options.get(
+            CONF_FOLLOW_ENABLED, DEFAULT_FOLLOW_ENABLED
+        )
 
     @property
     def _client_entry_id(self) -> str:
@@ -90,7 +98,9 @@ class ShellyExtenderFollowCoordinator(DataUpdateCoordinator[ShellyLink]):
 
         client_mac = _normalize_mac(client.unique_id)
         link = await self._probe(client_mac)
-        if link.via != VIA_UNREACHABLE:
+        # Always report reachability via the sensor; only repoint the entry
+        # when auto-follow is enabled.
+        if link.via != VIA_UNREACHABLE and self.follow_enabled:
             await self._apply(client, link)
 
         link.client_mac = client_mac

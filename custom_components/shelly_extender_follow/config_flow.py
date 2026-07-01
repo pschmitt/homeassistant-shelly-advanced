@@ -90,7 +90,11 @@ class ShellyExtenderFollowOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         """Show and persist the options."""
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            # Preserve options not shown here (e.g. follow_enabled, which is
+            # owned by the per-entry switch) so saving does not reset them.
+            return self.async_create_entry(
+                data={**self.config_entry.options, **user_input}
+            )
 
         opts = self.config_entry.options
         schema = vol.Schema(
