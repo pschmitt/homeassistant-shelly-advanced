@@ -1,0 +1,12 @@
+{
+  "domain": "shelly_advanced",
+  "name": "Shelly Advanced",
+  "codeowners": ["@pschmitt"],
+  "config_flow": true,
+  "documentation": "https://github.com/pschmitt/homeassistant-shelly-advanced",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/pschmitt/homeassistant-shelly-advanced/issues",
+  "loggers": ["custom_components.shelly_advanced"],
+  "version": "0.1.0"
+}

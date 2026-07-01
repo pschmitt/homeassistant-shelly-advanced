@@ -1,4 +1,4 @@
-# Shelly Extender Follow
+# Shelly Advanced
 
 A Home Assistant integration that keeps a **roaming Shelly**'s `shelly` config
 entry pointed at wherever the device is actually reachable.

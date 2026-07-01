@@ -1,0 +1,37 @@
+{
+  "entity": {
+    "sensor": {
+      "link": {
+        "default": "mdi:wifi-off",
+        "state": {
+          "direct": "mdi:wifi",
+          "extender": "mdi:wifi-arrow-up-down",
+          "unreachable": "mdi:wifi-off"
+        }
+      }
+    },
+    "switch": {
+      "follow_enabled": {
+        "default": "mdi:autorenew",
+        "state": {
+          "off": "mdi:autorenew-off"
+        }
+      },
+      "eco_mode": {
+        "default": "mdi:leaf"
+      },
+      "ap_enabled": {
+        "default": "mdi:access-point",
+        "state": {
+          "off": "mdi:access-point-off"
+        }
+      },
+      "range_extender": {
+        "default": "mdi:wifi-star",
+        "state": {
+          "off": "mdi:wifi-off"
+        }
+      }
+    }
+  }
+}
