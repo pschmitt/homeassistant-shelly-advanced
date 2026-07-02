@@ -129,7 +129,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
         """
         if user_input is not None:
             return self.async_create_entry(
-                title=f"Follow: {self._discovered_title}",
+                title=self._discovered_title,
                 data={
                     CONF_CLIENT_ENTRY_ID: self._discovered_client_id,
                     CONF_CLIENT_DIRECT_HOST: self._discovered_host,
@@ -199,7 +199,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
                     errors["base"] = "cannot_connect_extender"
                 else:
                     return self.async_create_entry(
-                        title=f"Follow: {client.title}",
+                        title=client.title,
                         data={
                             CONF_CLIENT_ENTRY_ID: client_entry_id,
                             # Inferred from the Shelly entry — no need to ask.
@@ -275,9 +275,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
             client = self.hass.config_entries.async_get_entry(
                 first[CONF_CLIENT_ENTRY_ID]
             )
-            return self.async_create_entry(
-                title=f"Follow: {client.title}", data=first
-            )
+            return self.async_create_entry(title=client.title, data=first)
 
         options = [
             selector.SelectOptionDict(value=entry.entry_id, label=entry.title)
@@ -309,7 +307,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
         client = self.hass.config_entries.async_get_entry(
             data[CONF_CLIENT_ENTRY_ID]
         )
-        title = f"Follow: {client.title}" if client else data[CONF_CLIENT_ENTRY_ID]
+        title = client.title if client else data[CONF_CLIENT_ENTRY_ID]
         return self.async_create_entry(title=title, data=data)
 
     @staticmethod
