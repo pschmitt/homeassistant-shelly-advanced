@@ -18,11 +18,19 @@ from .coordinator import ShellyAdvancedCoordinator
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Shelly Advanced from a config entry."""
     coordinator = ShellyAdvancedCoordinator(hass, entry)
-    await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload_on_update))
+
+    # Probing the Shellies over the network can take tens of seconds (several
+    # 5s timeouts when a device is offline). Never block setup on it: Home
+    # Assistant's startup waits for every integration, so with many entries a
+    # single unreachable device would delay the whole instance. Entities
+    # report unknown until this first poll completes.
+    entry.async_create_background_task(
+        hass, coordinator.async_refresh(), f"{DOMAIN} first refresh"
+    )
     return True
 
 

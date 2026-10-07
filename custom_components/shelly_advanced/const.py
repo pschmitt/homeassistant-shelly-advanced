@@ -49,3 +49,5 @@ RPC_WIFI_STATUS = "/rpc/WiFi.GetStatus"
 RPC_WIFI_AP_CLIENTS = "/rpc/WiFi.ListAPClients"
 
 HTTP_TIMEOUT = 5
+# Upper bound for locating the device (direct + extender scan) in one poll.
+PROBE_TIMEOUT = 15

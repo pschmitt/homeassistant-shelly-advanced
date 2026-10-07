@@ -40,6 +40,7 @@ from .const import (
     DEFAULT_FOLLOW_ENABLED,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    PROBE_TIMEOUT,
     SHELLY_DOMAIN,
     VIA_DIRECT,
     VIA_EXTENDER,
@@ -88,6 +89,12 @@ class ShellyAdvancedCoordinator(DataUpdateCoordinator[ShellyLink]):
         return self.config_entry.data[CONF_CLIENT_ENTRY_ID]
 
     @property
+    def client_mac(self) -> str:
+        """Return the client Shelly's normalized MAC (from its config entry)."""
+        client = self._client_entry()
+        return _normalize_mac(client.unique_id) if client else ""
+
+    @property
     def _direct_host(self) -> str:
         return self.config_entry.data[CONF_CLIENT_DIRECT_HOST]
 
@@ -131,8 +138,13 @@ class ShellyAdvancedCoordinator(DataUpdateCoordinator[ShellyLink]):
             raise UpdateFailed("Client Shelly config entry no longer exists")
 
         self._rpc = self._build_rpc()
-        client_mac = _normalize_mac(client.unique_id)
-        link = await self._probe(client_mac)
+        client_mac = self.client_mac
+        try:
+            async with asyncio.timeout(PROBE_TIMEOUT):
+                link = await self._probe(client_mac)
+        except TimeoutError:
+            _LOGGER.debug("Probing %s timed out", self.config_entry.title)
+            link = ShellyLink(via=VIA_UNREACHABLE)
 
         if link.via != VIA_UNREACHABLE:
             # Only repoint the entry when auto-follow is enabled.
@@ -241,14 +253,16 @@ class ShellyAdvancedCoordinator(DataUpdateCoordinator[ShellyLink]):
             link.extender_enabled = prev.extender_enabled
             link.ap_ssid = prev.ap_ssid
 
-        wifi = await self._rpc.call(link.host, link.port, "WiFi.GetConfig")
+        wifi, sys = await asyncio.gather(
+            self._rpc.call(link.host, link.port, "WiFi.GetConfig"),
+            self._rpc.call(link.host, link.port, "Sys.GetConfig"),
+        )
         if wifi is not None:
             ap = wifi.get("ap") or {}
             link.ap_enabled = ap.get("enable")
             link.ap_ssid = ap.get("ssid")
             range_extender = ap.get("range_extender") or {}
             link.extender_enabled = range_extender.get("enable")
-        sys = await self._rpc.call(link.host, link.port, "Sys.GetConfig")
         if sys is not None:
             link.eco_mode = (sys.get("device") or {}).get("eco_mode")
 

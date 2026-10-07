@@ -33,8 +33,8 @@ def _resolve_client_device(
     device = next(
         (
             d
-            for d in dev_reg.devices.values()
-            if client_entry_id in d.config_entries and (d.identifiers or d.connections)
+            for d in dr.async_entries_for_config_entry(dev_reg, client_entry_id)
+            if d.identifiers or d.connections
         ),
         None,
     )
@@ -74,9 +74,8 @@ class ShellyAdvancedEntity(CoordinatorEntity[ShellyAdvancedCoordinator]):
         """Initialize the entity."""
         super().__init__(coordinator)
         self._entry = entry
-        client_mac = coordinator.data.client_mac if coordinator.data else None
         name, device, device_info = _resolve_client_device(
-            coordinator.hass, entry, client_mac or ""
+            coordinator.hass, entry, coordinator.client_mac
         )
         if device is not None:
             self.device_entry = device
