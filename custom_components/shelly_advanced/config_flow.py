@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import (
     SOURCE_IMPORT,
     ConfigEntry,
@@ -61,10 +60,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def _followed_client_ids(self) -> set[str]:
         """Return client entry ids already covered by an existing follow entry."""
-        return {
-            entry.data.get(CONF_CLIENT_ENTRY_ID)
-            for entry in self._async_current_entries()
-        }
+        return {entry.data.get(CONF_CLIENT_ENTRY_ID) for entry in self._async_current_entries()}
 
     def _unfollowed_shellies(self) -> list[ConfigEntry]:
         """Return usable Shelly entries not yet being followed."""
@@ -75,13 +71,9 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
             if entry.entry_id not in followed and entry.unique_id
         ]
 
-    async def async_step_user(
-        self, user_input: dict | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_user(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Offer manual (single) or bulk discovery."""
-        return self.async_show_menu(
-            step_id="user", menu_options=["manual", "discover"]
-        )
+        return self.async_show_menu(step_id="user", menu_options=["manual", "discover"])
 
     def _shelly_entry_for_mac(self, mac: str) -> ConfigEntry | None:
         """Return the `shelly` config entry whose MAC matches, if any."""
@@ -94,9 +86,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
             None,
         )
 
-    async def async_step_zeroconf(
-        self, discovery_info: ZeroconfServiceInfo
-    ) -> ConfigFlowResult:
+    async def async_step_zeroconf(self, discovery_info: ZeroconfServiceInfo) -> ConfigFlowResult:
         """Surface a Shelly found on the network as a discovered device.
 
         We follow an existing `shelly` config entry, so match the advertised
@@ -142,21 +132,15 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({}),
         )
 
-    async def async_step_reconfigure(
-        self, user_input: dict | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_reconfigure(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Edit an existing entry's direct address and extender."""
         entry = self._get_reconfigure_entry()
         if user_input is not None:
             return self.async_update_reload_and_abort(
                 entry,
                 data_updates={
-                    CONF_CLIENT_DIRECT_HOST: user_input[
-                        CONF_CLIENT_DIRECT_HOST
-                    ].strip(),
-                    CONF_EXTENDER_HOST: (
-                        user_input.get(CONF_EXTENDER_HOST) or ""
-                    ).strip(),
+                    CONF_CLIENT_DIRECT_HOST: user_input[CONF_CLIENT_DIRECT_HOST].strip(),
+                    CONF_EXTENDER_HOST: (user_input.get(CONF_EXTENDER_HOST) or "").strip(),
                 },
             )
         schema = vol.Schema(
@@ -177,9 +161,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={"name": entry.title},
         )
 
-    async def async_step_manual(
-        self, user_input: dict | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_manual(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Add a single Shelly, specifying its hosts explicitly."""
         errors: dict[str, str] = {}
 
@@ -203,8 +185,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
                         data={
                             CONF_CLIENT_ENTRY_ID: client_entry_id,
                             # Inferred from the Shelly entry — no need to ask.
-                            CONF_CLIENT_DIRECT_HOST: client.data.get(CONF_HOST)
-                            or "",
+                            CONF_CLIENT_DIRECT_HOST: client.data.get(CONF_HOST) or "",
                             CONF_EXTENDER_HOST: extender,
                         },
                     )
@@ -226,13 +207,9 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_EXTENDER_HOST, default=""): str,
             }
         )
-        return self.async_show_form(
-            step_id="manual", data_schema=schema, errors=errors
-        )
+        return self.async_show_form(step_id="manual", data_schema=schema, errors=errors)
 
-    async def async_step_discover(
-        self, user_input: dict | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_discover(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Bulk-add follow entries for many Shellies at once.
 
         The direct host defaults to each Shelly entry's current host; an
@@ -272,9 +249,7 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
             first = payloads[0]
             await self.async_set_unique_id(first[CONF_CLIENT_ENTRY_ID])
             self._abort_if_unique_id_configured()
-            client = self.hass.config_entries.async_get_entry(
-                first[CONF_CLIENT_ENTRY_ID]
-            )
+            client = self.hass.config_entries.async_get_entry(first[CONF_CLIENT_ENTRY_ID])
             return self.async_create_entry(title=client.title, data=first)
 
         options = [
@@ -298,15 +273,11 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
         )
         return self.async_show_form(step_id="discover", data_schema=schema)
 
-    async def async_step_import(
-        self, data: dict[str, Any]
-    ) -> ConfigFlowResult:
+    async def async_step_import(self, data: dict[str, Any]) -> ConfigFlowResult:
         """Create a follow entry programmatically (used by bulk discovery)."""
         await self.async_set_unique_id(data[CONF_CLIENT_ENTRY_ID])
         self._abort_if_unique_id_configured()
-        client = self.hass.config_entries.async_get_entry(
-            data[CONF_CLIENT_ENTRY_ID]
-        )
+        client = self.hass.config_entries.async_get_entry(data[CONF_CLIENT_ENTRY_ID])
         title = client.title if client else data[CONF_CLIENT_ENTRY_ID]
         return self.async_create_entry(title=title, data=data)
 
@@ -320,16 +291,12 @@ class ShellyAdvancedConfigFlow(ConfigFlow, domain=DOMAIN):
 class ShellyAdvancedOptionsFlow(OptionsFlow):
     """Tune the poll interval and direct port."""
 
-    async def async_step_init(
-        self, user_input: dict | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_init(self, user_input: dict | None = None) -> ConfigFlowResult:
         """Show and persist the options."""
         if user_input is not None:
             # Preserve options not shown here (e.g. follow_enabled, which is
             # owned by the per-entry switch) so saving does not reset them.
-            return self.async_create_entry(
-                data={**self.config_entry.options, **user_input}
-            )
+            return self.async_create_entry(data={**self.config_entry.options, **user_input})
 
         opts = self.config_entry.options
         schema = vol.Schema(

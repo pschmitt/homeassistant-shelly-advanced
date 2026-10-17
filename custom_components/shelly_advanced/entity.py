@@ -82,6 +82,4 @@ class ShellyAdvancedEntity(CoordinatorEntity[ShellyAdvancedCoordinator]):
         else:
             self._attr_device_info = device_info
         if name and self._platform and self._object_id_key:
-            self.entity_id = (
-                f"{self._platform}.{slugify(name)}_{self._object_id_key}"
-            )
+            self.entity_id = f"{self._platform}.{slugify(name)}_{self._object_id_key}"

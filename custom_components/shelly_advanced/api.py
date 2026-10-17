@@ -14,7 +14,6 @@ from typing import Any
 
 import aiohttp
 from aiohttp import DigestAuthMiddleware
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -45,11 +44,7 @@ class ShellyRpc:
         username, password = self._creds_by_host.get(host, self._default_creds)
         if password:
             return {
-                "middlewares": (
-                    DigestAuthMiddleware(
-                        login=username or "admin", password=password
-                    ),
-                )
+                "middlewares": (DigestAuthMiddleware(login=username or "admin", password=password),)
             }
         return {}
 
@@ -69,9 +64,7 @@ class ShellyRpc:
 
     async def ap_clients(self, host: str, port: int = 80) -> list[dict] | None:
         """Return the extender's AP client list, or None if unreachable."""
-        data = await self._get_json(
-            host, f"http://{host}:{port}{RPC_WIFI_AP_CLIENTS}"
-        )
+        data = await self._get_json(host, f"http://{host}:{port}{RPC_WIFI_AP_CLIENTS}")
         if data is None:
             return None
         return data.get("ap_clients", [])
@@ -88,9 +81,7 @@ class ShellyRpc:
         payload = {"id": 1, "method": method, "params": params or {}}
         try:
             async with asyncio.timeout(HTTP_TIMEOUT):
-                resp = await self._session.post(
-                    url, json=payload, **self._kwargs(host)
-                )
+                resp = await self._session.post(url, json=payload, **self._kwargs(host))
                 resp.raise_for_status()
                 data = await resp.json()
         except (aiohttp.ClientError, TimeoutError, ValueError) as err:

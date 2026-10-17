@@ -77,9 +77,7 @@ class ShellyAdvancedCoordinator(DataUpdateCoordinator[ShellyLink]):
         # Whether auto-follow is active. Read once here (and re-read on reload)
         # so the very first poll after setup already honors the persisted
         # choice. Toggled at runtime by the per-entry switch.
-        self.follow_enabled: bool = entry.options.get(
-            CONF_FOLLOW_ENABLED, DEFAULT_FOLLOW_ENABLED
-        )
+        self.follow_enabled: bool = entry.options.get(CONF_FOLLOW_ENABLED, DEFAULT_FOLLOW_ENABLED)
         # In auto mode (no extender configured), the extender we last found the
         # client behind — probed first before rescanning all Shellies.
         self._last_extender_host: str | None = None
@@ -174,18 +172,16 @@ class ShellyAdvancedCoordinator(DataUpdateCoordinator[ShellyLink]):
         #    table and read the forwarded port ("mport") it assigned to us.
         if self._extender_host:
             # A specific extender was configured — just query that one.
-            return await self._find_on_extender(
-                self._extender_host, client_mac
-            ) or ShellyLink(via=VIA_UNREACHABLE)
+            return await self._find_on_extender(self._extender_host, client_mac) or ShellyLink(
+                via=VIA_UNREACHABLE
+            )
 
         # Auto mode (no extender configured): search every other Shelly's
         # AP-client table to find whichever one is currently extending us.
         # Try the last extender we found first (cheap), then scan the rest
         # concurrently. Non-extender Shellies just return an empty list.
         if self._last_extender_host:
-            link = await self._find_on_extender(
-                self._last_extender_host, client_mac
-            )
+            link = await self._find_on_extender(self._last_extender_host, client_mac)
             if link is not None:
                 return link
 
@@ -212,9 +208,7 @@ class ShellyAdvancedCoordinator(DataUpdateCoordinator[ShellyLink]):
                 hosts.append(host)
         return hosts
 
-    async def _find_on_extender(
-        self, extender_host: str, client_mac: str
-    ) -> ShellyLink | None:
+    async def _find_on_extender(self, extender_host: str, client_mac: str) -> ShellyLink | None:
         """Return an extender ShellyLink if the client is behind this host."""
         for candidate in await self._rpc.ap_clients(extender_host) or []:
             if _normalize_mac(candidate.get("mac")) != client_mac:

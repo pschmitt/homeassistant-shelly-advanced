@@ -46,9 +46,13 @@ class ShellyLinkSensor(ShellyAdvancedEntity, SensorEntity):
     _attr_translation_key = "link"
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_options = [VIA_DIRECT, VIA_EXTENDER, VIA_UNREACHABLE]
     _platform = "sensor"
     _object_id_key = "network_path"
+
+    def __init__(self, coordinator: ShellyAdvancedCoordinator, entry: ConfigEntry) -> None:
+        """Initialize the link sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_options = [VIA_DIRECT, VIA_EXTENDER, VIA_UNREACHABLE]
 
     @property
     def unique_id(self) -> str:

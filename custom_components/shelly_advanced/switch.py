@@ -92,9 +92,7 @@ class _DeviceConfigSwitch(ShellyAdvancedEntity, SwitchEntity):
     _key: str
     _method: str
 
-    def __init__(
-        self, coordinator: ShellyAdvancedCoordinator, entry: ConfigEntry
-    ) -> None:
+    def __init__(self, coordinator: ShellyAdvancedCoordinator, entry: ConfigEntry) -> None:
         """Initialize with the subclass translation key."""
         super().__init__(coordinator, entry)
         self._attr_translation_key = self._key
@@ -124,15 +122,11 @@ class _DeviceConfigSwitch(ShellyAdvancedEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable the setting on the device."""
-        await self.coordinator.async_set_device_config(
-            self._method, self._config(True)
-        )
+        await self.coordinator.async_set_device_config(self._method, self._config(True))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Disable the setting on the device."""
-        await self.coordinator.async_set_device_config(
-            self._method, self._config(False)
-        )
+        await self.coordinator.async_set_device_config(self._method, self._config(False))
 
 
 class EcoModeSwitch(_DeviceConfigSwitch):
@@ -171,11 +165,7 @@ class RangeExtenderSwitch(_DeviceConfigSwitch):
     _method = "WiFi.SetConfig"
 
     def _current(self) -> bool | None:
-        return (
-            self.coordinator.data.extender_enabled
-            if self.coordinator.data
-            else None
-        )
+        return self.coordinator.data.extender_enabled if self.coordinator.data else None
 
     def _config(self, value: bool) -> dict:
         return {"ap": {"range_extender": {"enable": value}}}
