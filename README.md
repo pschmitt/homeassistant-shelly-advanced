@@ -37,6 +37,19 @@ It exposes one `sensor` per configured device whose state is `direct`,
 `extender`, or `unreachable`, with the resolved `host`/`port`/`ssid`/`ip`/
 `mport`/`client_mac` and the `last_reconfigure` timestamp as attributes.
 
+## Installation
+
+### Home Assistant 2026.11 and newer
+
+[![Open this integration in Home Assistant Marketplace](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=pschmitt&repository=homeassistant-shelly-advanced&category=integration)
+
+Click the badge to add the repository, then install the integration. Restart
+Home Assistant and add it from **Settings → Devices & services**.
+
+For Home Assistant versions before 2026.11, add
+`https://github.com/pschmitt/homeassistant-shelly-advanced` as a custom
+Integration repository in HACS, then install and restart Home Assistant.
+
 ## Configuration
 
 Add the integration from the UI. You can either:
